@@ -145,7 +145,7 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: D.panel,
-        indicatorColor: D.panelHi,
+        indicatorColor: D.accent.withValues(alpha: 0.16),
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [

@@ -84,7 +84,7 @@ class HistoryDay {
 
 class User {
   final String id, name, username;
-  final String? avatarColor, avatarImage, avatarEmoji, bio;
+  final String? avatarColor, avatarImage, avatarEmoji, bio, publicKey;
   final int totalPoints, streak;
   final bool online, isMe;
   final String? lastSeenAt;
@@ -96,6 +96,7 @@ class User {
     this.avatarImage,
     this.avatarEmoji,
     this.bio,
+    this.publicKey,
     required this.totalPoints,
     required this.streak,
     required this.online,
@@ -110,6 +111,7 @@ class User {
       avatarImage: j['avatarImage'] as String?,
       avatarEmoji: j['avatarEmoji'] as String?,
       bio: j['bio'] as String?,
+      publicKey: j['publicKey'] as String?,
       totalPoints: (j['totalPoints'] ?? 0) as int,
       streak: (j['streak'] ?? 0) as int,
       online: (j['online'] ?? false) as bool,

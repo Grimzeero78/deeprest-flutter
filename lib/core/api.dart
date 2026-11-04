@@ -96,18 +96,25 @@ class Api {
 
   // ---------- auth ----------
   static Future<void> register(
-      String name, String password, String confirmPassword, String hint) async {
+      String name, String password, String confirmPassword, String hint,
+      {String? publicKey}) async {
     final r = await post('/api/auth/register', {
       'name': name,
       'password': password,
       'confirmPassword': confirmPassword,
       'hint': hint,
+      'publicKey': ?publicKey,
     });
     await saveSession(r['token'] as String, name);
   }
 
-  static Future<void> login(String name, String password) async {
-    final r = await post('/api/auth/login', {'name': name, 'password': password});
+  static Future<void> login(String name, String password,
+      {String? publicKey}) async {
+    final r = await post('/api/auth/login', {
+      'name': name,
+      'password': password,
+      'publicKey': ?publicKey,
+    });
     await saveSession(r['token'] as String, (r['user']?['name'] ?? name) as String);
   }
 
@@ -126,7 +133,21 @@ class Api {
   }
 
   // ---------- me / dashboard ----------
-  static Future<Map<String, dynamic>> me() => get('/api/auth/me');
+  static const _meCacheKey = 'deeprest_me_cache';
+
+  /// Last successful /api/auth/me payload — cached on this device so the
+  /// app can paint the home screen instantly instead of waiting on network.
+  static Future<String?> cachedMe() async {
+    final sp = await SharedPreferences.getInstance();
+    return sp.getString(_meCacheKey);
+  }
+
+  static Future<Map<String, dynamic>> me() async {
+    final r = await get('/api/auth/me');
+    final sp = await SharedPreferences.getInstance();
+    await sp.setString(_meCacheKey, jsonEncode(r));
+    return r;
+  }
 
   static Future<void> setTarget(int minutes) =>
       post('/api/screentime', {'action': 'target', 'minutes': minutes});

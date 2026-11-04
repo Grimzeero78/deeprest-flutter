@@ -38,6 +38,8 @@ dependencies:
   http: ^1.2.2
   shared_preferences: ^2.3.2
   intl: ^0.19.0
+  cryptography: ^2.7.0 # pure-Dart crypto: HKDF, PBKDF2, AES-GCM (no NDK)
+  pointycastle: ^3.9.1 # pure-Dart P-256 ECDH (cryptography's pure ECDH is a stub)
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

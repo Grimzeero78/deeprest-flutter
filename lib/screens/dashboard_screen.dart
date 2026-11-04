@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api.dart';
 import '../core/models.dart';
 import '../core/permissions.dart';
@@ -15,12 +16,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   bool? _usageGranted; // null = still checking
   bool _syncing = false;
+  bool _dialogShown = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initDevice();
+    _initDevice(askIfMissing: true);
     _reload();
   }
 
@@ -37,13 +39,52 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     if (state == AppLifecycleState.resumed) _initDevice();
   }
 
-  Future<void> _initDevice() async {
+  Future<void> _initDevice({bool askIfMissing = false}) async {
     final granted = await DevicePermissions.hasUsageAccess();
     if (!mounted) return;
     setState(() => _usageGranted = granted);
     if (granted) {
       final ok = await _syncFromDevice();
       if (ok && mounted) _reload();
+    } else if (askIfMissing && !_dialogShown) {
+      _dialogShown = true;
+      _showUsagePermissionDialog();
+    }
+  }
+
+  /// Android-style runtime permission dialog. Usage access is a "special"
+  /// permission Android only grants from system Settings — every screen-time
+  /// app works this way — so "Allow" deep-links there and we re-check on return.
+  Future<void> _showUsagePermissionDialog() async {
+    final sp = await SharedPreferences.getInstance();
+    if (sp.getBool('deeprest_usage_declined') ?? false) return;
+    if (!mounted) return;
+    final allow = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: D.panel,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Allow DeepRest to access app usage data?',
+            style: TextStyle(fontSize: 19, height: 1.3)),
+        content: const Text(
+            'DeepRest will measure how long apps are used on this phone to build your screen-time dashboard, streak and rank. Nothing inside your apps is ever read or shared.',
+            style: TextStyle(fontSize: 14, height: 1.4, color: D.sub)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Don\'t allow')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Allow',
+                  style: TextStyle(color: D.accent, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+    if (allow == true) {
+      await DevicePermissions.openUsageAccessSettings();
+    } else {
+      await sp.setBool('deeprest_usage_declined', true);
     }
   }
 
@@ -107,7 +148,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     final me = widget.me;
     if (me == null) return const Center(child: CircularProgressIndicator(color: D.accent));
 
-    final hasUsage = me.minutesUsed > 0 || me.topApps.isNotEmpty;
     return Scaffold(
       backgroundColor: D.bg,
       body: RefreshIndicator(
@@ -138,30 +178,21 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               ]),
               const SizedBox(height: 14),
               if (_usageGranted == false)
-                Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: D.amber.withValues(alpha: .1), borderRadius: BorderRadius.circular(10)),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      const Icon(Icons.phone_android, color: D.amber, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('Usage access is off. Grant it so DeepRest can track your screen time automatically — measured on this phone, synced to your dashboard.',
-                          style: TextStyle(fontSize: 12, color: D.amber))),
-                    ]),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: D.amber, foregroundColor: Colors.black),
-                      onPressed: () => DevicePermissions.openUsageAccessSettings(),
-                      icon: const Icon(Icons.settings, size: 18),
-                      label: const Text('Grant Usage access'),
-                    ),
-                  ]),
-                ),
-              if (_usageGranted == true && !hasUsage)
-                Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: D.amber.withValues(alpha: .1), borderRadius: BorderRadius.circular(10)),
-                  child: const Row(children: [
-                    Icon(Icons.hourglass_empty, color: D.amber, size: 20),
-                    SizedBox(width: 10),
-                    Expanded(child: Text('Measuring… no screen time recorded yet today. Pull down to refresh after using your phone a bit.',
-                        style: TextStyle(fontSize: 12, color: D.amber))),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(children: [
+                    const Icon(Icons.lock_outline, size: 13, color: D.sub),
+                    const SizedBox(width: 6),
+                    Expanded(
+                        child: Text('Usage access is off — screen time isn’t being measured.',
+                            style: const TextStyle(fontSize: 11, color: D.sub))),
+                    GestureDetector(
+                        onTap: () => _initDevice(askIfMissing: true),
+                        child: const Text('Turn on',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: D.accent,
+                                fontWeight: FontWeight.bold))),
                   ]),
                 ),
               if (me.topApps.isNotEmpty) ...[

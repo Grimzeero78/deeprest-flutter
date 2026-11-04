@@ -206,6 +206,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             'color': u.avatarColor,
                             'image': u.avatarImage,
                             'emoji': u.avatarEmoji,
+                            'publicKey': u.publicKey,
                           },
                           isGroup: false,
                         ),

@@ -46,7 +46,22 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   Future<void> _open(Conversation c) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(convoId: c.id, title: c.name, peerAvatar: c.peer != null ? {'name': c.peer!.name, 'color': c.peer!.avatarColor, 'image': c.peer!.avatarImage, 'emoji': c.peer!.avatarEmoji} : null, isGroup: c.kind == 'group')));
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => ChatScreen(
+                convoId: c.id,
+                title: c.name,
+                peerAvatar: c.peer != null
+                    ? {
+                        'name': c.peer!.name,
+                        'color': c.peer!.avatarColor,
+                        'image': c.peer!.avatarImage,
+                        'emoji': c.peer!.avatarEmoji,
+                        'publicKey': c.peer!.publicKey,
+                      }
+                    : null,
+                isGroup: c.kind == 'group')));
     _load(silent: true);
   }
 
@@ -86,9 +101,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   Widget _tile(Conversation c) {
     final lm = c.lastMessage;
-    final preview = lm == null
+    final raw = lm == null
         ? (c.kind == 'group' ? 'Group created' : 'Say hi 👋')
-        : (lm.kind == 'system' ? lm.body : lm.body);
+        : lm.body;
+    // Encrypted previews show as a lock line until opened.
+    final preview = raw.startsWith('{"v":1,')
+        ? (lm?.senderId.isNotEmpty ?? false ? '🔒 Encrypted message' : '🔒 Encrypted')
+        : (lm != null && lm.kind == 'system' ? raw : raw);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       tileColor: D.bg,
