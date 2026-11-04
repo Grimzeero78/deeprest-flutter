@@ -77,7 +77,6 @@ class _DuoScreenState extends State<DuoScreen> {
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: D.accent));
     final s = _state ?? {};
-    final partnership = s['partnership'] as Map<String, dynamic>?;
     final pending = s['pendingInvite'] as Map<String, dynamic>?;
     final partner = s['partner'] as Map<String, dynamic>?;
 

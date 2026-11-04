@@ -20,7 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _reload() async {
     try {
-      final r = await Api.me();
+      await Api.me();
       if (mounted) setState(() { /* me is rebuilt by parent */ });
       widget.onChanged();
     } catch (_) {}
@@ -97,6 +97,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(child: Text('Waiting for your phone… Open DeepRest on Android and grant Usage access, then tap Sync. Your app usage appears here automatically.',
                         style: TextStyle(fontSize: 12, color: D.amber))),
                   ]),
+                ),
               if (me.topApps.isNotEmpty) ...[
                 const Align(alignment: Alignment.centerLeft, child: Text('Top apps', style: TextStyle(color: D.sub, fontSize: 12))),
                 const SizedBox(height: 6),
@@ -129,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(children: [
                   SizedBox(width: 64, child: Text(h.date.substring(5), style: const TextStyle(fontSize: 12, color: D.sub))),
                   Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(value: (h.targetMin == 0 ? 0 : (h.minutesUsed / h.targetMin)).clamp(0.0, 1.0),
+                      child: LinearProgressIndicator(value: (h.targetMin == 0 ? 0.0 : (h.minutesUsed / h.targetMin)).clamp(0.0, 1.0).toDouble(),
                           minHeight: 8, backgroundColor: D.panelHi, color: h.metTarget ? D.accent : D.sos))),
                   SizedBox(width: 58, child: Text('${h.minutesUsed}m', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: h.metTarget ? D.accent : D.sos))),
                 ]))).toList()),
