@@ -22,7 +22,11 @@ class UsageSnapshot {
   final bool granted;
   final int minutes;
   final List<TopAppEntry> topApps;
-  UsageSnapshot({required this.granted, required this.minutes, required this.topApps});
+  UsageSnapshot({
+    required this.granted,
+    required this.minutes,
+    required this.topApps,
+  });
 }
 
 class DevicePermissions {
@@ -45,12 +49,17 @@ class DevicePermissions {
 
   /// Ask for POST_NOTIFICATIONS once (Android 13+). Returns granted status.
   static Future<bool> requestNotificationsOnce() async {
+    final sp = await SharedPreferences.getInstance();
     try {
-      final sp = await SharedPreferences.getInstance();
-      if (sp.getBool(_askedNotifKey) ?? false) return true;
+      if (sp.getBool(_askedNotifKey) ?? false) {
+        return await _ch.invokeMethod<bool>('hasNotificationPermission') ??
+            false;
+      }
+      final granted =
+          await _ch.invokeMethod<bool>('requestNotifications') ?? false;
       await sp.setBool(_askedNotifKey, true);
-      return await _ch.invokeMethod<bool>('requestNotifications') ?? true;
-    } catch (_) {
+      return granted;
+    } on MissingPluginException {
       return true;
     }
   }

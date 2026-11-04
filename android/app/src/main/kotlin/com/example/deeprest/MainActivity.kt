@@ -31,7 +31,7 @@ class MainActivity : FlutterActivity() {
 
                     "requestNotifications" -> {
                         if (Build.VERSION.SDK_INT >= 33 &&
-                            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            !hasNotificationPermission()
                         ) {
                             notifResult = result
                             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2001)
@@ -39,6 +39,8 @@ class MainActivity : FlutterActivity() {
                             result.success(true)
                         }
                     }
+
+                    "hasNotificationPermission" -> result.success(hasNotificationPermission())
 
                     "usageToday" -> result.success(usageToday())
 
@@ -71,6 +73,11 @@ class MainActivity : FlutterActivity() {
             ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
         }
         return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        return Build.VERSION.SDK_INT < 33 ||
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     }
 
     /**
