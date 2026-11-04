@@ -131,6 +131,12 @@ class Api {
   static Future<void> setTarget(int minutes) =>
       post('/api/screentime', {'action': 'target', 'minutes': minutes});
 
+  /// Push today's usage measured on this phone (UsageStatsManager) to the
+  /// backend. Bearer-only: the backend rejects cookie sessions for this
+  /// action, so what the phone measured is the only truth the dashboard shows.
+  static Future<void> syncScreentime(int minutes, List<Map<String, dynamic>> topApps) =>
+      post('/api/screentime', {'action': 'set', 'minutes': minutes, 'topApps': topApps});
+
   // ---------- community ----------
   static Future<List<dynamic>> users({String q = ''}) async {
     final r = await get('/api/users?q=${Uri.encodeComponent(q)}&limit=100');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/models.dart';
+import '../core/permissions.dart';
 import '../core/ui.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -11,14 +12,61 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
+  bool? _usageGranted; // null = still checking
+  bool _syncing = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initDevice();
     _reload();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // When the user returns from the Usage-access Settings screen, re-check
+  // and (if now granted) immediately measure + sync today's usage.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _initDevice();
+  }
+
+  Future<void> _initDevice() async {
+    final granted = await DevicePermissions.hasUsageAccess();
+    if (!mounted) return;
+    setState(() => _usageGranted = granted);
+    if (granted) {
+      final ok = await _syncFromDevice();
+      if (ok && mounted) _reload();
+    }
+  }
+
+  /// Measure today's screen time on this phone and push it to the backend.
+  Future<bool> _syncFromDevice() async {
+    if (_syncing) return false;
+    _syncing = true;
+    try {
+      final snap = await DevicePermissions.usageToday();
+      if (snap == null || !snap.granted) return false;
+      await Api.syncScreentime(
+          snap.minutes,
+          [for (final a in snap.topApps) {'name': a.name, 'minutes': a.minutes}]);
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      _syncing = false;
+    }
+  }
+
   Future<void> _reload() async {
+    if (_usageGranted ?? false) await _syncFromDevice();
     try {
       await Api.me();
       if (mounted) setState(() { /* me is rebuilt by parent */ });
@@ -89,12 +137,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _stat(me.metTarget ? '✅' : '⚠️', me.metTarget ? 'met target' : 'over target'),
               ]),
               const SizedBox(height: 14),
-              if (!hasUsage)
+              if (_usageGranted == false)
+                Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: D.amber.withValues(alpha: .1), borderRadius: BorderRadius.circular(10)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      const Icon(Icons.phone_android, color: D.amber, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('Usage access is off. Grant it so DeepRest can track your screen time automatically — measured on this phone, synced to your dashboard.',
+                          style: TextStyle(fontSize: 12, color: D.amber))),
+                    ]),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: D.amber, foregroundColor: Colors.black),
+                      onPressed: () => DevicePermissions.openUsageAccessSettings(),
+                      icon: const Icon(Icons.settings, size: 18),
+                      label: const Text('Grant Usage access'),
+                    ),
+                  ]),
+                ),
+              if (_usageGranted == true && !hasUsage)
                 Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: D.amber.withValues(alpha: .1), borderRadius: BorderRadius.circular(10)),
                   child: const Row(children: [
-                    Icon(Icons.phone_android, color: D.amber, size: 20),
+                    Icon(Icons.hourglass_empty, color: D.amber, size: 20),
                     SizedBox(width: 10),
-                    Expanded(child: Text('Waiting for your phone… Open DeepRest on Android and grant Usage access, then tap Sync. Your app usage appears here automatically.',
+                    Expanded(child: Text('Measuring… no screen time recorded yet today. Pull down to refresh after using your phone a bit.',
                         style: TextStyle(fontSize: 12, color: D.amber))),
                   ]),
                 ),

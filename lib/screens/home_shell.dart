@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/models.dart';
+import '../core/permissions.dart';
 import '../core/ui.dart';
 import 'chats_screen.dart';
 import 'community_screen.dart';
@@ -30,6 +31,8 @@ class _HomeShellState extends State<HomeShell> {
     super.initState();
     _loadMe();
     _poll = Timer.periodic(const Duration(seconds: 3), (_) => _pollCall());
+    // Android 13+: ask for the notification permission once, on first launch.
+    DevicePermissions.requestNotificationsOnce();
   }
 
   @override

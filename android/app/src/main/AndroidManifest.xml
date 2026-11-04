@@ -1,6 +1,25 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Core networking (talks to the DeepRest Cloudflare backend) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Notifications (Android 13+ shows a runtime dialog on first launch,
+         requested by MainActivity via the "deeprest/device" channel) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!-- Screen-time tracking: Usage Access. This is a "special permission" —
+         it cannot be granted by a dialog; the app deep-links the user to
+         Settings > Usage access (Settings.ACTION_USAGE_ACCESS_SETTINGS) and
+         re-checks when they return. Measured by UsageStatsManager. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions"/>
+
     <application
-        android:label="deeprest"
+        android:label="DeepRest"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -40,6 +59,12 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Package visibility (Android 11+): lets us resolve friendly app
+             labels (e.g. "WhatsApp") for the usage stats we read. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
         </intent>
     </queries>
 </manifest>
