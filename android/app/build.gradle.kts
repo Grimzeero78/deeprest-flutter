@@ -7,7 +7,8 @@ plugins {
 android {
     namespace = "com.example.deeprest"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion intentionally omitted: pure-Dart app, no native code.
+    // Setting it makes the Flutter plugin force-download the full NDK.
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

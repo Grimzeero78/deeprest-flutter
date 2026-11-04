@@ -27,6 +27,11 @@ environment:
 # dependencies can be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
+dependency_overrides:
+  # 2.5.x pulls the `jni` package, which forces a full NDK+cmake build.
+  # 2.4.x uses plain Java — no NDK needed, same API.
+  shared_preferences_android: 2.4.11
+
 dependencies:
   flutter:
     sdk: flutter
